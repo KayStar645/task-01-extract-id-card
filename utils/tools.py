@@ -117,35 +117,27 @@ def crop_image(image_path, label_path):
     
     # Xoay hình ảnh
     c1, c2, c3, c4 = get_corners(image)
-    image = rotate_image1(image, c1, c2, top_left)
-    #image = rotate_image(image, top_left, top_right, bottom_left, bottom_right)
+    # Kiểm tra xem TopLeft là label mấy, từ label truy ra c mấy
+    image = rotate_image_to_match_corner(image, c1, None, top_left, None)
+    #image = rotate_image(image, c1, c2, top_left)
+
     return image
 
-def rotate_image(image, top_left, top_right, bottom_left, bottom_right):
-    # Lấy tọa độ các góc của hình ảnh
-    c1, c2, c3, c4 = get_corners(image)
-
-    # Tạo ma trận biến đổi perspective
-    src_pts = np.float32([top_left, top_right, bottom_left, bottom_right])
-    dst_pts = np.float32([c1, c2, c3, c4])
-    perspective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-
-    # Thực hiện biến đổi hình ảnh
-    rotated_image = cv2.warpPerspective(image, perspective_matrix, (image.shape[1], image.shape[0]))
-
-    # Đảo ngược kích thước dài và rộng
-    #rotated_image = cv2.rotate(image, cv2.ROTATE_180)
-    #rotated_image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-    rotated_image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-    return rotated_image
-
-def rotate_image1(image_old, top_left_old, top_right_old, top_left_new):
+def rotate_image(image_old, top_left_old, top_right_old, top_left_new):
     
     C_rad = find_angle(top_left_old, top_right_old, top_left_new)
 
-    rotated_image = rotate_image_with_angle(image_old, C_rad)
+    rotated_image = rotate_image_with_angle(image_old, C_rad, False)
 
+    return rotated_image
+
+def rotate_image_to_match_corner(image, corner_A1, corner_A4, corner_G1, corner_G4):
+    # Tính góc giữa các điểm A1, A4 và G1, G4
+    angle_to_rotate = find_angle_2(corner_A1, corner_A4, corner_G1) - find_angle_2(corner_A1, corner_A4, corner_G4)
+    
+    # Xoay hình ảnh với góc tính được
+    rotated_image = rotate_image_with_angle(image, angle_to_rotate)
+    
     return rotated_image
 
 def get_corners(image):
@@ -175,11 +167,37 @@ def find_angle(a, b, c):
     
     return C_deg
 
-def rotate_image_with_angle(image, angle):
+def find_angle_2(a, b, c):
+    # Tính vectơ AB và BC
+    AB = [b[0] - a[0], b[1] - a[1]]
+    BC = [c[0] - b[0], c[1] - b[1]]
+    
+    # Tính độ dài của vectơ AB và BC
+    length_AB = math.sqrt(AB[0] ** 2 + AB[1] ** 2)
+    length_BC = math.sqrt(BC[0] ** 2 + BC[1] ** 2)
+    
+    # Tính tích vô hướng của AB và BC
+    dot_product = AB[0] * BC[0] + AB[1] * BC[1]
+    
+    # Tính cosin của góc giữa AB và BC
+    cos_angle = dot_product / (length_AB * length_BC)
+    
+    # Tính góc (radians)
+    angle_rad = math.acos(cos_angle)
+    
+    # Chuyển từ radians sang độ
+    angle_deg = math.degrees(angle_rad)
+    
+    return angle_deg
+
+def rotate_image_with_angle(image, angle, clockwise=True):
     # Tính kích thước của ảnh
     (h, w) = image.shape[:2]
     # Tính tâm của ảnh
     center = (w // 2, h // 2)
+    # Đảo ngược góc nếu cần thiết
+    if clockwise:
+        angle = 360 - angle
     # Xây dựng ma trận biến đổi affine
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
     # Thực hiện xoay ảnh
