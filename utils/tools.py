@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 imageFormats = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.txt', 'JPG']
 def crop_image(image_path, label_path):
@@ -106,40 +107,81 @@ def crop_image(image_path, label_path):
         # Thêm điểm thứ 4 vào danh sách
         corners[none_index] = p4
 
+    # Lấy hình ảnh cắt
+    #image = image[min(corners[0]):max(corners[3]), min(corners[0]):max(corners[3])]
+
     top_left = (min(corners[0]), min(corners[0]))
     top_right = (max(corners[1]), min(corners[1]))
     bottom_left = (min(corners[2]), max(corners[2]))
     bottom_right = (max(corners[3]), max(corners[3]))
-
-    # Lấy hình ảnh cắt
-    image = image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
-
+    
     # Xoay hình ảnh
-    image = rotate_image(image, top_left, top_right, bottom_left, bottom_right)
+    c1, c2, c3, c4 = get_corners(image)
+    image = rotate_image1(image, c1, c2, top_left)
+    #image = rotate_image(image, top_left, top_right, bottom_left, bottom_right)
     return image
 
 def rotate_image(image, top_left, top_right, bottom_left, bottom_right):
-    # Tính kích thước mới cho hình ảnh đích
-    new_width = max(top_right[0], bottom_right[0]) - min(top_left[0], bottom_left[0])
-    new_height = max(bottom_left[1], bottom_right[1]) - min(top_left[1], top_right[1])
+    # Lấy tọa độ các góc của hình ảnh
+    c1, c2, c3, c4 = get_corners(image)
 
     # Tạo ma trận biến đổi perspective
     src_pts = np.float32([top_left, top_right, bottom_left, bottom_right])
-    dst_pts = np.float32([[0, 0], [new_width, 0], [0, new_height], [new_width, new_height]])
-    perspective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-
-    # Thực hiện biến đổi hình ảnh
-    rotated_image = cv2.warpPerspective(image, perspective_matrix, (new_width, new_height))
-
-    return rotated_image
-
-def rotate_image1(image, top_left, top_right, bottom_left, bottom_right):
-    # Tạo ma trận biến đổi perspective
-    src_pts = np.float32([top_left, top_right, bottom_left, bottom_right])
-    dst_pts = np.float32([[0, 0], [image.shape[0], 0], [0, image.shape[1]], [image.shape[0], image.shape[1]]])
+    dst_pts = np.float32([c1, c2, c3, c4])
     perspective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
 
     # Thực hiện biến đổi hình ảnh
     rotated_image = cv2.warpPerspective(image, perspective_matrix, (image.shape[1], image.shape[0]))
 
+    # Đảo ngược kích thước dài và rộng
+    #rotated_image = cv2.rotate(image, cv2.ROTATE_180)
+    #rotated_image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    rotated_image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+    return rotated_image
+
+def rotate_image1(image_old, top_left_old, top_right_old, top_left_new):
+    
+    C_rad = find_angle(top_left_old, top_right_old, top_left_new)
+
+    rotated_image = rotate_image_with_angle(image_old, C_rad)
+
+    return rotated_image
+
+def get_corners(image):
+    height, width = image.shape[:2]
+
+    top_left = (0, 0)
+    top_right = (width, 0)
+    bottom_left = (0, height)
+    bottom_right = (width, height)
+
+    return top_left, top_right, bottom_left, bottom_right
+
+def find_angle(a, b, c):
+    # Tính độ dài các đoạn thẳng
+    ab = math.sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2)
+    ac = math.sqrt((c[0] - a[0])**2 + (c[1] - a[1])**2)
+    bc = math.sqrt((c[0] - b[0])**2 + (c[1] - b[1])**2)
+    
+    # Tính giá trị của cos(C)
+    cos_C = (ab**2 + ac**2 - bc**2) / (2 * ab * ac)
+    
+    # Tính góc C bằng arccosine
+    C_rad = math.acos(cos_C)
+    
+    # Chuyển đổi radian thành độ
+    C_deg = math.degrees(C_rad)
+    
+    return C_deg
+
+def rotate_image_with_angle(image, angle):
+    # Tính kích thước của ảnh
+    (h, w) = image.shape[:2]
+    # Tính tâm của ảnh
+    center = (w // 2, h // 2)
+    # Xây dựng ma trận biến đổi affine
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    # Thực hiện xoay ảnh
+    rotated_image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
     return rotated_image

@@ -21,8 +21,8 @@ weights_info_path = prefix_path + "/yolov9/runs/train/yolov9-c-info/weights/best
 detect_corner_path = prefix_path + '/yolov9/runs/detect/corner'
 detect_info_path = prefix_path + '/yolov9/runs/detect/info'
 
-image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
-image_path_2 = 'C:/Users/DELL/Desktop/thuanpt/data/Hinh/000000059_1.jpg'
+#image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
+image_path = 'C:/Users/DELL/Desktop/thuanpt/data/Hinh/000000059_1.jpg'
 
 cropped_image_path = prefix_path + '/yolov9/runs/detect/' + str(uuid.uuid4()) + os.path.splitext(image_path)[1]
 
