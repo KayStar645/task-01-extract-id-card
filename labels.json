@@ -1,0 +1,25 @@
+{
+    "categories": [
+      {
+        "id": 0,
+        "name": "bottom_left"
+      },
+      {
+        "id": 1,
+        "name": "bottom_right"
+      },
+      {
+        "id": 2,
+        "name": "top_left"
+      },
+      {
+        "id": 3,
+        "name": "top_right"
+      }
+    ],
+    "info": {
+      "year": 2024,
+      "version": "1.0",
+      "contributor": "Label Studio"
+    }
+  }

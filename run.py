@@ -22,6 +22,7 @@ detect_corner_path = prefix_path + '/yolov9/runs/detect/corner'
 detect_info_path = prefix_path + '/yolov9/runs/detect/info'
 
 image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
+image_path_2 = 'C:/Users/DELL/Desktop/thuanpt/data/Hinh/000000059_1.jpg'
 
 cropped_image_path = prefix_path + '/yolov9/runs/detect/' + str(uuid.uuid4()) + os.path.splitext(image_path)[1]
 
@@ -35,54 +36,52 @@ code = ''
 name = ''
 
 # Chọn hình ảnh
-def button_select_images(root):
-    label = tk.Label(root)
-    label.pack(padx=10, pady=10)
-    select_button = tk.Button(root, text="Chọn ảnh",
-                              command=lambda: show_selected_image(label))
-    select_button.pack(pady=10)
+# def button_select_images(root):
+#     label = tk.Label(root)
+#     label.pack(padx=10, pady=10)
+#     select_button = tk.Button(root, text="Chọn ảnh",
+#                               command=lambda: show_selected_image(label))
+#     select_button.pack(pady=10)
 
-def show_selected_image(label):
-    filename = filedialog.askopenfilename(initialdir="/", title="Chọn hình ảnh",
-                                          filetypes=(("Image Files", "*.png;*.jpg;*.jpeg"),
-                                                     ("All Files", "*.*")))
-    if filename:
-        global image_path
-        image_path = filename
-        image = Image.open(filename)
-        image = image.resize((414, 414), Image.ANTIALIAS)
-        photo = ImageTk.PhotoImage(image)
-        label.config(image=photo)
-        label.image = photo
+# def show_selected_image(label):
+#     filename = filedialog.askopenfilename(initialdir="/", title="Chọn hình ảnh",
+#                                           filetypes=(("Image Files", "*.png;*.jpg;*.jpeg"),
+#                                                      ("All Files", "*.*")))
+#     if filename:
+#         global image_path
+#         image_path = filename
+#         image = Image.open(filename)
+#         image = image.resize((414, 414), Image.ANTIALIAS)
+#         photo = ImageTk.PhotoImage(image)
+#         label.config(image=photo)
+#         label.image = photo
 
-root = tk.Tk()
-root.title("Chọn ảnh")
+# root = tk.Tk()
+# root.title("Chọn ảnh")
 
 # Tạo nhãn để hiển thị đường dẫn của hình ảnh
-filename_label = tk.Label(root)
-filename_label.pack(pady=10)
+# filename_label = tk.Label(root)
+# filename_label.pack(pady=10)
 
-# Gọi hàm để tạo nút và hiển thị hình ảnh
-button_select_images(root)
+# # Gọi hàm để tạo nút và hiển thị hình ảnh
+# button_select_images(root)
 
-root.mainloop()
+# root.mainloop()
 
 label_name = os.path.basename(image_path).split('.')[0] + '.txt'
-print(image_path)
 
 # Bước 1: Detect góc chứng minh thư
 # Xây dựng lệnh để chạy
 detect.run(weights=weights_corner_path, source=image_path, 
-           save_txt=True, nosave=True, name='corner')
+           save_txt=True, name='corner')
 cropped_image = crop_image(image_path, f'{labels_path}{label_name}')
 
 # Xóa thư mục detect_path corner
-shutil.rmtree(detect_corner_path)
+# shutil.rmtree(detect_corner_path)
 
 # Bước 2: Detect thông tin trên chứng minh thư
 # Lưu chứng minh thư đã cắt góc lại
 cv2.imwrite(cropped_image_path, cropped_image)
-
 # Xây dựng lệnh để chạy
 detect.run(weights=weights_info_path, source=cropped_image_path,
            nosave=True, save_crop=True, name='info')
@@ -147,17 +146,18 @@ print('code: '+ code)
 print('name: '+ name)
 
 
-# # Hiển thị ảnh ban đầu
-# oldd_image = cv2.imread(image_path)
-# plt.subplot(2, 2, 1)
-# plt.imshow(oldd_image)
-# plt.title('Ảnh trước khi cắt')
-# plt.axis('off')
+# Hiển thị ảnh ban đầu
+oldd_image = cv2.imread(image_path)
+plt.subplot(2, 2, 1)
+plt.imshow(oldd_image)
+plt.title('Ảnh trước khi cắt')
+plt.axis('off')
 
-# # Hiển thị ảnh sau khi cắt
-# plt.subplot(2, 2, 2)
-# plt.imshow(cropped_image)
-# plt.title('Ảnh sau khi cắt')
-# plt.axis('off')
-# plt.show()
+# Hiển thị ảnh sau khi cắt
+plt.subplot(2, 2, 2)
+plt.imshow(cropped_image)
+plt.title('Ảnh sau khi cắt')
+plt.axis('off')
+plt.show()
+
 
