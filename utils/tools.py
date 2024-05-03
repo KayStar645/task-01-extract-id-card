@@ -139,8 +139,28 @@ def rotate_image_with_angle(image, angle, clockwise=True):
         angle = 360 - angle
     # Xây dựng ma trận biến đổi affine
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    # Thực hiện xoay ảnh mà không thay đổi kích thước
+    rotated_image = cv2.warpAffine(image, M, (w, h))
+    
+    return rotated_image
+
+def custom_rotate_image(image, angle_deg):
+    # Lấy kích thước của ảnh
+    (h, w) = image.shape[:2]
+    # Tính tâm của ảnh
+    center = (w // 2, h // 2)
+    # Tạo ma trận quay
+    M = cv2.getRotationMatrix2D(center, angle_deg, 1.0)
+    # Tính kích thước của ảnh đã xoay
+    cos_theta = abs(M[0, 0])
+    sin_theta = abs(M[0, 1])
+    new_w = int((h * sin_theta) + (w * cos_theta))
+    new_h = int((h * cos_theta) + (w * sin_theta))
+    # Điều chỉnh ma trận quay để giữ lại toàn bộ ảnh sau khi xoay
+    M[0, 2] += (new_w / 2) - center[0]
+    M[1, 2] += (new_h / 2) - center[1]
     # Thực hiện xoay ảnh
-    rotated_image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    rotated_image = cv2.warpAffine(image, M, (new_w, new_h))
     return rotated_image
 
 def rotate_image_to_align_vectors(image, corners, corner1, corner4,
@@ -165,24 +185,11 @@ def rotate_image_to_align_vectors(image, corners, corner1, corner4,
 
     # Lấy hình ảnh cắt
     image = image[min_y:max_y, min_x:max_x]
+
+    # image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     
-    image = rotate_image_with_angle(image, angle_deg, False)
+    image = custom_rotate_image(image, angle_deg)
 
     return image
-
-def rotate_point(point, angle_deg, width, height):
-    angle_rad = math.radians(angle_deg)
-    cos_theta = math.cos(angle_rad)
-    sin_theta = math.sin(angle_rad)
-
-    # Điều chỉnh tọa độ điểm để nằm tại tâm của hình ảnh
-    adjusted_point = (point[0] - width / 2, point[1] - height / 2)
-
-    # Tính lại tọa độ của điểm sau khi quay
-    rotated_x = adjusted_point[0] * cos_theta - adjusted_point[1] * sin_theta
-    rotated_y = adjusted_point[0] * sin_theta + adjusted_point[1] * cos_theta
-
-    # Điều chỉnh lại tọa độ theo kích thước mới của hình ảnh và trả về
-    return int(rotated_x + width / 2), int(rotated_y + height / 2)
 
 

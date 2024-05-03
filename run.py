@@ -78,7 +78,7 @@ detect.run(weights=weights_corner_path, source=image_path,
 cropped_image = crop_image(image_path, f'{labels_path}{label_name}')
 
 # Xóa thư mục detect_path corner
-# shutil.rmtree(detect_corner_path)
+shutil.rmtree(detect_corner_path)
 
 # Bước 2: Detect thông tin trên chứng minh thư
 # Lưu chứng minh thư đã cắt góc lại
@@ -138,7 +138,7 @@ if os.path.exists(name_dir):
         name += pytesseract.image_to_string(img)
 
 # Xóa thư mục detect_path info
-shutil.rmtree(detect_info_path)
+# shutil.rmtree(detect_info_path)
 
 
 # Sử dụng ORC để trích xuất thông tin - Xem qua Mô hình nhận dạng văn bản end-to-end
