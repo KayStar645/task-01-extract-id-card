@@ -21,9 +21,9 @@ weights_info_path = prefix_path + "/yolov9/runs/train/yolov9-c-info/weights/best
 detect_corner_path = prefix_path + '/yolov9/runs/detect/corner'
 detect_info_path = prefix_path + '/yolov9/runs/detect/info'
 
-#image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
-# image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/Hinh/000000059_1.jpg'
-image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/test/cccd_90.jpg'
+# image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
+image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/Hinh/000000422_1.jpg'
+# image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/test/cmnd_90.jpg'
 
 cropped_image_path = prefix_path + '/yolov9/runs/detect/' + str(uuid.uuid4()) + os.path.splitext(image_path)[1]
 
@@ -78,7 +78,7 @@ detect.run(weights=weights_corner_path, source=image_path,
 cropped_image = crop_image(image_path, f'{labels_path}{label_name}')
 
 # Xóa thư mục detect_path corner
-shutil.rmtree(detect_corner_path)
+# shutil.rmtree(detect_corner_path)
 
 # Bước 2: Detect thông tin trên chứng minh thư
 # Lưu chứng minh thư đã cắt góc lại
@@ -87,7 +87,7 @@ cv2.imwrite(cropped_image_path, cropped_image)
 detect.run(weights=weights_info_path, source=cropped_image_path,
            nosave=True, save_crop=True, name='info')
 # Xóa hình ảnh chứng minh thư sau khi xử lý
-os.remove(cropped_image_path)
+# os.remove(cropped_image_path)
 
 # Bước 3: Trích xuất thông tin trên đối tượng đã cắt
 # Tiền xử lý thông tin trên đối tượng đã cắt

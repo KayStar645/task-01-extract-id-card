@@ -24,60 +24,6 @@ def crop_image(image_path, label_path):
         # Tách thông tin tọa độ từ dòng
         label, x_center, y_center, box_width, box_height = map(float, line.split())
         # Tính toạ độ của các góc
-        top_left = int((x_center - box_width / 2) * image.shape[1])
-        bottom_left = int((y_center - box_height / 2) * image.shape[0])
-        top_right = int((x_center + box_width / 2) * image.shape[1])
-        bottom_right = int((y_center + box_height / 2) * image.shape[0])
-
-        if label - 2 < 0:
-            label = int(label) + 2
-        else:
-            label = int(label) - 2
-
-        corners[label] = (top_left, bottom_left, top_right, bottom_right)
-
-    if corners.count(None) == 1:
-        # Lấy tọa độ của 3 điểm
-        p1, p2, p3 = [corner for corner in corners if corner is not None]
-
-        # Tính trung điểm của các cạnh nối các điểm
-        p4_x = (p1[0] + p2[0] + p3[0]) // 3
-        p4_y = (p1[1] + p2[1] + p3[1]) // 3
-
-        # Tìm vị trí của phần tử None trong danh sách corners
-        none_index = corners.index(None)
-
-        # Tính tọa độ của điểm thứ 4
-        p4 = (p4_x, p4_y, p2[2], p2[3])
-
-        # Thêm điểm thứ 4 vào danh sách
-        corners[none_index] = p4
-
-    import cv2
-import numpy as np
-
-imageFormats = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.txt', 'JPG']
-def crop_image(image_path, label_path):
-    # Đọc hình ảnh từ đường dẫn
-    image = cv2.imread(image_path)
-
-    try:
-        with open(label_path, 'r') as f:
-            lines = f.readlines()
-
-        if len(lines) < 3:
-            print(f"Error: Not enough points to crop image {image_path}")
-            return None
-    except FileNotFoundError:
-        print(f"Error: Label file '{label_path}' not found")
-        return None
-
-    # Tính toạ độ của các góc của hình chữ nhật
-    corners = [None, None, None, None]
-    for line in lines:
-        # Tách thông tin tọa độ từ dòng
-        label, x_center, y_center, box_width, box_height = map(float, line.split())
-        # Tính toạ độ của các góc
         c1 = int((x_center - box_width / 2) * image.shape[1])
         c2 = int((y_center - box_height / 2) * image.shape[0])
         c3 = int((x_center + box_width / 2) * image.shape[1])
@@ -185,8 +131,6 @@ def rotate_image_to_align_vectors(image, corners, corner1, corner4,
 
     # Lấy hình ảnh cắt
     image = image[min_y:max_y, min_x:max_x]
-
-    # image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     
     image = custom_rotate_image(image, angle_deg)
 
