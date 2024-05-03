@@ -78,17 +78,17 @@ def crop_image(image_path, label_path):
         # Tách thông tin tọa độ từ dòng
         label, x_center, y_center, box_width, box_height = map(float, line.split())
         # Tính toạ độ của các góc
-        top_left = int((x_center - box_width / 2) * image.shape[1])
-        bottom_left = int((y_center - box_height / 2) * image.shape[0])
-        top_right = int((x_center + box_width / 2) * image.shape[1])
-        bottom_right = int((y_center + box_height / 2) * image.shape[0])
+        c1 = int((x_center - box_width / 2) * image.shape[1])
+        c2 = int((y_center - box_height / 2) * image.shape[0])
+        c3 = int((x_center + box_width / 2) * image.shape[1])
+        c4 = int((y_center + box_height / 2) * image.shape[0])
 
         if label - 2 < 0:
             label = int(label) + 2
         else:
             label = int(label) - 2
 
-        corners[label] = (top_left, bottom_left, top_right, bottom_right)
+        corners[label] = (c1, c2, c3, c4)
 
     if corners.count(None) == 1:
         # Lấy tọa độ của 3 điểm
@@ -108,18 +108,16 @@ def crop_image(image_path, label_path):
         corners[none_index] = p4
 
     # Lấy hình ảnh cắt
-    #image = image[min(corners[0]):max(corners[3]), min(corners[0]):max(corners[3])]
+    # image = image[min(corners[0]):max(corners[3]), min(corners[0]):max(corners[3])]
 
-    top_left = (min(corners[0]), min(corners[0]))
-    top_right = (max(corners[1]), min(corners[1]))
-    bottom_left = (min(corners[2]), max(corners[2]))
-    bottom_right = (max(corners[3]), max(corners[3]))
+    top_left = (min(corners[0][0], corners[0][2]), min(corners[0][1], corners[0][3]))
+    top_right = (max(corners[1][0], corners[1][2]), min(corners[1][1], corners[1][3]))
+    bottom_left = (min(corners[2][0], corners[2][2]), max(corners[2][1], corners[2][3]))
+    bottom_right = (max(corners[3][0], corners[3][2]), max(corners[3][1], corners[3][3]))
     
     # Xoay hình ảnh
     c1, c2, c3, c4 = get_corners(image)
-    # Kiểm tra xem TopLeft là label mấy, từ label truy ra c mấy
-    image = rotate_image_to_match_corner(image, c1, None, top_left, None)
-    #image = rotate_image(image, c1, c2, top_left)
+    image = rotate_image_to_align_vectors(image, c1, c4, top_left, bottom_right)
 
     return image
 
@@ -129,15 +127,6 @@ def rotate_image(image_old, top_left_old, top_right_old, top_left_new):
 
     rotated_image = rotate_image_with_angle(image_old, C_rad, False)
 
-    return rotated_image
-
-def rotate_image_to_match_corner(image, corner_A1, corner_A4, corner_G1, corner_G4):
-    # Tính góc giữa các điểm A1, A4 và G1, G4
-    angle_to_rotate = find_angle_2(corner_A1, corner_A4, corner_G1) - find_angle_2(corner_A1, corner_A4, corner_G4)
-    
-    # Xoay hình ảnh với góc tính được
-    rotated_image = rotate_image_with_angle(image, angle_to_rotate)
-    
     return rotated_image
 
 def get_corners(image):
@@ -167,29 +156,6 @@ def find_angle(a, b, c):
     
     return C_deg
 
-def find_angle_2(a, b, c):
-    # Tính vectơ AB và BC
-    AB = [b[0] - a[0], b[1] - a[1]]
-    BC = [c[0] - b[0], c[1] - b[1]]
-    
-    # Tính độ dài của vectơ AB và BC
-    length_AB = math.sqrt(AB[0] ** 2 + AB[1] ** 2)
-    length_BC = math.sqrt(BC[0] ** 2 + BC[1] ** 2)
-    
-    # Tính tích vô hướng của AB và BC
-    dot_product = AB[0] * BC[0] + AB[1] * BC[1]
-    
-    # Tính cosin của góc giữa AB và BC
-    cos_angle = dot_product / (length_AB * length_BC)
-    
-    # Tính góc (radians)
-    angle_rad = math.acos(cos_angle)
-    
-    # Chuyển từ radians sang độ
-    angle_deg = math.degrees(angle_rad)
-    
-    return angle_deg
-
 def rotate_image_with_angle(image, angle, clockwise=True):
     # Tính kích thước của ảnh
     (h, w) = image.shape[:2]
@@ -202,4 +168,19 @@ def rotate_image_with_angle(image, angle, clockwise=True):
     M = cv2.getRotationMatrix2D(center, angle, 1.0)
     # Thực hiện xoay ảnh
     rotated_image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    return rotated_image
+
+def rotate_image_to_align_vectors(image, corner1, corner3, cornerA, cornerC):
+    # Tính toán vector 13 và vector ac
+    vector_13 = np.array([corner3[0] - corner1[0], corner3[1] - corner1[1]])
+    vector_ac = np.array([cornerC[0] - cornerA[0], cornerC[1] - cornerA[1]])
+
+    # Tính toán góc xoay giữa vector 13 và vector ac
+    angle_rad = math.atan2(vector_ac[1], vector_ac[0]) - math.atan2(vector_13[1], vector_13[0])
+    angle_deg = math.degrees(angle_rad)
+
+    angle_deg += 40
+
+    rotated_image = rotate_image_with_angle(image, angle_deg, False)
+
     return rotated_image
