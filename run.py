@@ -22,7 +22,7 @@ detect_corner_path = prefix_path + '/yolov9/runs/detect/corner'
 detect_info_path = prefix_path + '/yolov9/runs/detect/info'
 
 # image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
-image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/Hinh/000000422_1.jpg'
+image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/Hinh/000000095_1.jpg'
 # image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/test/cmnd_90.jpg'
 
 cropped_image_path = prefix_path + '/yolov9/runs/detect/' + str(uuid.uuid4()) + os.path.splitext(image_path)[1]
@@ -149,13 +149,13 @@ print('name: '+ name)
 
 # Hiển thị ảnh ban đầu
 oldd_image = cv2.imread(image_path)
-plt.subplot(2, 2, 1)
+plt.subplot(1, 2, 1)
 plt.imshow(oldd_image)
 plt.title('Ảnh trước khi cắt')
 plt.axis('off')
 
 # Hiển thị ảnh sau khi cắt
-plt.subplot(2, 2, 2)
+plt.subplot(1, 2, 2)
 plt.imshow(cropped_image)
 plt.title('Ảnh sau khi cắt')
 plt.axis('off')

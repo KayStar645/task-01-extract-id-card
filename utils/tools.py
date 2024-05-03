@@ -54,14 +54,10 @@ def crop_image(image_path, label_path):
         corners[none_index] = p4
 
     top_left = (min(corners[0][0], corners[0][2]), min(corners[0][1], corners[0][3]))
-    top_right = (max(corners[1][0], corners[1][2]), min(corners[1][1], corners[1][3]))
-    bottom_left = (min(corners[2][0], corners[2][2]), max(corners[2][1], corners[2][3]))
     bottom_right = (max(corners[3][0], corners[3][2]), max(corners[3][1], corners[3][3]))
     
     # Xoay hình ảnh
-    c1, c2, c3, c4 = get_corners(image)
-    image = rotate_image_to_align_vectors(image, corners, c1, c4, top_left,
-                                          top_right, bottom_left, bottom_right)
+    image = rotate_image_to_align_vectors(image, corners, top_left, bottom_right)
 
     return image
 
@@ -109,20 +105,7 @@ def custom_rotate_image(image, angle_deg):
     rotated_image = cv2.warpAffine(image, M, (new_w, new_h))
     return rotated_image
 
-def rotate_image_to_align_vectors(image, corners, corner1, corner4,
-                                  cornerA, cornerB, cornerC, cornerD):
-    # Tính toán vector 14 và vector ad
-    vector_14 = np.array([corner4[0] - corner1[0], corner4[1] - corner1[1]])
-    vector_ad = np.array([cornerD[0] - cornerA[0], cornerD[1] - cornerA[1]])
-
-    # Tính toán góc xoay giữa vector 14 và vector ad
-    angle_rad = math.atan2(vector_ad[1], vector_ad[0]) - math.atan2(vector_14[1], vector_14[0])
-    angle_deg = math.degrees(angle_rad)
-
-    # Cộng thêm nửa góc vuông: Độ lệch từ góc chéo tới cạnh hình cn
-    # Sai số 5 độ
-    angle_deg += 40
-
+def rotate_image_to_align_vectors(image, corners, cornerA, cornerD):
     # Tìm góc trên cùng bên trái và góc dưới cùng bên phải của hình chữ nhật
     min_x = min([corner[0] for corner in corners])
     min_y = min([corner[1] for corner in corners])
@@ -131,6 +114,21 @@ def rotate_image_to_align_vectors(image, corners, corner1, corner4,
 
     # Lấy hình ảnh cắt
     image = image[min_y:max_y, min_x:max_x]
+
+    corner1, c2, c3, corner4 = get_corners(image)
+
+    # Tính toán vector 14 và vector ad
+    vector_14 = np.array([corner4[0] - corner1[0], corner4[1] - corner1[1]])
+    vector_ad = np.array([cornerD[0] - cornerA[0], cornerD[1] - cornerA[1]])
+
+    # Tính toán góc xoay giữa vector 14 và vector ad
+    angle_rad = math.atan2(vector_ad[1],
+                           vector_ad[0]) - math.atan2(vector_14[1],
+                                                      vector_14[0])
+    angle_deg = math.degrees(angle_rad)
+
+    # Cộng thêm nửa góc vuông: Độ lệch từ góc chéo tới cạnh hình cn
+    # angle_deg += 45
     
     image = custom_rotate_image(image, angle_deg)
 
