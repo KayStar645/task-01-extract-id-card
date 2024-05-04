@@ -11,7 +11,7 @@ def crop_image(image_path, label_path):
         with open(label_path, 'r') as f:
             lines = f.readlines()
 
-        if len(lines) < 3:
+        if len(lines) < 2:
             print(f"Error: Not enough points to crop image {image_path}")
             return image
     except FileNotFoundError:
@@ -29,32 +29,31 @@ def crop_image(image_path, label_path):
         c3 = int((x_center + box_width / 2) * image.shape[1])
         c4 = int((y_center + box_height / 2) * image.shape[0])
 
-        if label - 2 < 0:
-            label = int(label) + 2
-        else:
-            label = int(label) - 2
+        if label == 0:
+            corners[2] = (c1,c4)
+        if label == 1:
+            corners[3] = (c3, c4)
+        if label == 2:
+            corners[0] = (c1, c2)
+        if label == 3:
+            corners[1] = (c3, c2)
 
-        corners[label] = (c1, c2, c3, c4)
-
-    if corners.count(None) > 1:
+    none_index = -1
+    if corners.count(None) > 2:
         return image
     elif corners.count(None) == 1:
         # Lấy tọa độ của 3 điểm
         p1, p2, p3 = [corner for corner in corners if corner is not None]
 
-        # Tính trung điểm của các cạnh nối các điểm
-        p4_x = (p1[0] + p2[0] + p3[0]) // 3
-        p4_y = (p1[1] + p2[1] + p3[1]) // 3
-
         # Tìm vị trí của phần tử None trong danh sách corners
         none_index = corners.index(None)
 
-        # Tính tọa độ của điểm thứ 4
-        p4 = (p4_x, p4_y, p2[2], p2[3])
-
         # Thêm điểm thứ 4 vào danh sách
-        corners[none_index] = p4
+        corners[none_index] = find_fourth_point(p1, p2, p3)
 
+    image_with_circles = draw_circles(image, corners)
+    cv2.imwrite('C:/Users/DELL/Desktop/thuanpt/6.Solution/task-01-extract-id-card/yolov9/runs/detect/corner/temp2.jpg',
+                    image_with_circles)
     # Xoay hình ảnh
     image = rotate_image_to_align_vectors(image, corners)
 
@@ -69,21 +68,6 @@ def get_corners(image):
     bottom_right = (width, height)
 
     return top_left, top_right, bottom_left, bottom_right
-
-def rotate_image_with_angle(image, angle, clockwise=True):
-    # Tính kích thước của ảnh
-    (h, w) = image.shape[:2]
-    # Tính tâm của ảnh
-    center = (w // 2, h // 2)
-    # Đảo ngược góc nếu cần thiết
-    if clockwise:
-        angle = 360 - angle
-    # Xây dựng ma trận biến đổi affine
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
-    # Thực hiện xoay ảnh mà không thay đổi kích thước
-    rotated_image = cv2.warpAffine(image, M, (w, h))
-    
-    return rotated_image
 
 def custom_rotate_image(image, angle_deg):
     # Lấy kích thước của ảnh
@@ -105,56 +89,103 @@ def custom_rotate_image(image, angle_deg):
     return rotated_image
 
 def rotate_image_to_align_vectors(image, corners):
-    # Tìm góc trên cùng bên trái và góc dưới cùng bên phải của hình chữ nhật
-    min_x = min([corner[0] for corner in corners])
-    min_y = min([corner[1] for corner in corners])
-    max_x = max([corner[2] for corner in corners])
-    max_y = max([corner[3] for corner in corners])
-
-    cr1, cr2, cr3, cr4 = get_corners(image)
     # Lấy hình ảnh cắt
-    image = image[min_y:max_y, min_x:max_x]
+    if corners.count(None) == 0:
+        # Tìm góc trên cùng bên trái và góc dưới cùng bên phải của hình chữ nhật
+        min_x = min(int(corner[0]) for corner in corners)  # Tọa độ x của góc trên cùng bên trái
+        min_y = min(int(corner[1]) for corner in corners)  # Tọa độ y của góc trên cùng bên trái
+        max_x = max(int(corner[0]) for corner in corners)  # Tọa độ x của góc dưới cùng bên phải
+        max_y = max(int(corner[1]) for corner in corners)  # Tọa độ y của góc dưới cùng bên phải
+
+        image = image[min_y:max_y, min_x:max_x]
+
+    cv2.imwrite('C:/Users/DELL/Desktop/thuanpt/6.Solution/task-01-extract-id-card/yolov9/runs/detect/corner/temp.jpg',
+                image)
 
     c1, c2, c3, c4 = get_corners(image)
     
-    top_left = (min(corners[0][0], corners[0][2]) - min_x,
-                min(corners[0][1], corners[0][3]) - min_y)
-    bottom_right = (max(corners[3][0], corners[3][2]) - min_x,
-                    max(corners[3][1], corners[3][3]) - min_y)
- 
-
-    # Tính toán vector 14 và vector ad
-    vector_14 = np.array([c4[0] - c1[0], c4[1] - c1[1]])
-    vector_ad = np.array([bottom_right[0] - top_left[0], bottom_right[1] - top_left[1]])
-
+    verters = []
+    corners_temp = []
+    for index, corner in enumerate(corners):
+        if corner != None:
+            verters.append(corner)
+            if index == 0:
+                corners_temp.append(c1)
+            elif index == 1:
+                corners_temp.append(c2)
+            elif index == 2:
+                corners_temp.append(c3)
+            elif index == 3:
+                corners_temp.append(c4) 
+    vector_12 = np.array([corners_temp[1][0] - corners_temp[0][0],
+                        corners_temp[1][1] - corners_temp[0][1]])
+    vector_ab = np.array([verters[1][0] - verters[0][0],
+                        verters[1][1] - verters[0][1]])
+        
     # Tính toán góc xoay giữa vector 14 và vector ad
-    angle_rad = math.atan2(vector_ad[1],
-                           vector_ad[0]) - math.atan2(vector_14[1],
-                                                      vector_14[0])
+    angle_rad = math.atan2(vector_ab[1],
+                           vector_ab[0]) - math.atan2(vector_12[1],
+                                                      vector_12[0])
     angle_deg = math.degrees(angle_rad)
-
-    # Nếu top left của đối tượng tới hình lớn hơn
-    # top left của đối tượng tới 3 góc còn lại
-    # Cộng thêm nửa góc vuông: Độ lệch từ góc chéo tới cạnh hình cn
-    top_left = (min(corners[0][0], corners[0][2]),
-                min(corners[0][1], corners[0][3]))
-    top_right = (max(corners[1][0], corners[1][2]),
-                 min(corners[1][1], corners[1][3]))
-    bottom_left = (min(corners[2][0], corners[2][2]),
-                   max(corners[2][1], corners[2][3]))
-    bottom_right = (max(corners[3][0], corners[3][2]),
-                    max(corners[3][1], corners[3][3]))
-    if distance(cr1, top_left) > min(distance(cr1, top_right),
-                                    distance(cr1, bottom_left),
-                                    distance(cr1, bottom_right)):
-        angle_deg += 22.5
     
     image = custom_rotate_image(image, angle_deg)
 
     return image
 
 def distance(point1, point2):
-    x1, y1 = point1
-    x2, y2 = point2
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    # Tính khoảng cách Euclid giữa hai điểm
+    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
 
+def midpoint(point1, point2):
+    # Tính trung điểm của hai điểm
+    return ((point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2)
+
+def find_fourth_point(A, B, C):
+    # Tính độ dài các cạnh
+    AB = distance(A, B)
+    BC = distance(B, C)
+    CA = distance(C, A)
+
+    # Xác định cạnh dài nhất
+    max_edge = max(AB, BC, CA)
+
+    # Tính trung điểm của cạnh dài nhất
+    if max_edge == AB:
+        center = midpoint(A, B)
+        D_prime = find_symmetric_point(C, center)
+    elif max_edge == BC:
+        center = midpoint(B, C)
+        D_prime = find_symmetric_point(A, center)
+    else:
+        center = midpoint(C, A)
+        D_prime = find_symmetric_point(B, center)
+
+    return D_prime
+
+def find_symmetric_point(A, center):
+    x_A_prime = 2 * center[0] - A[0]
+    y_A_prime = 2 * center[1] - A[1]
+    return (x_A_prime, y_A_prime)
+
+def draw_circles(image, corners, radius=20, color=(0, 255, 0), thickness=-1):
+    """
+    Vẽ các chấm tròn lên hình ảnh dựa trên các tọa độ được cung cấp.
+
+    Args:
+        image (numpy.ndarray): Hình ảnh đầu vào.
+        corners (list): Danh sách các tọa độ của các chấm. Mỗi tọa độ là một tuple (x, y).
+        radius (int): Bán kính của chấm.
+        color (tuple): Màu sắc của chấm, dưới dạng tuple (B, G, R).
+        thickness (int): Độ dày của viền chấm. Nếu -1, thì sẽ là chấm đặc.
+
+    Returns:
+        numpy.ndarray: Hình ảnh với các chấm tròn được vẽ lên.
+    """
+    # Tạo một bản sao của hình ảnh để không làm thay đổi hình ảnh gốc
+    output_image = image.copy()
+    
+    # Vẽ chấm tròn lên hình cho mỗi tọa độ
+    for corner in corners:
+        cv2.circle(output_image, (int(corner[0]), int(corner[1])), radius, color, thickness)
+    
+    return output_image

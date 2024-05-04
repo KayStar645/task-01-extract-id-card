@@ -22,7 +22,7 @@ detect_corner_path = prefix_path + '/yolov9/runs/detect/corner'
 detect_info_path = prefix_path + '/yolov9/runs/detect/info'
 
 # image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/000000093_1.jpg'
-image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/Hinh/000000021_1.jpg'
+image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/Hinh/000000020_1.jpg'
 # image_path = 'C:/Users/DELL/Desktop/thuanpt/5.Data/test/cmnd_90.jpg'
 
 cropped_image_path = prefix_path + '/yolov9/runs/detect/' + str(uuid.uuid4()) + os.path.splitext(image_path)[1]
