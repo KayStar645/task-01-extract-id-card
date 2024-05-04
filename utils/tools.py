@@ -165,7 +165,7 @@ def find_fourth_point(A, B, C):
 def find_symmetric_point(A, center):
     x_A_prime = 2 * center[0] - A[0]
     y_A_prime = 2 * center[1] - A[1]
-    return (x_A_prime, y_A_prime)
+    return (abs(int(x_A_prime)), abs(int(y_A_prime)))
 
 def draw_circles(image, corners, radius=20, color=(0, 255, 0), thickness=-1):
     """
