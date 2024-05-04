@@ -13,7 +13,7 @@ def crop_image(image_path, label_path):
 
         if len(lines) < 3:
             print(f"Error: Not enough points to crop image {image_path}")
-            return None
+            return image
     except FileNotFoundError:
         print(f"Error: Label file '{label_path}' not found")
         return None
@@ -36,7 +36,9 @@ def crop_image(image_path, label_path):
 
         corners[label] = (c1, c2, c3, c4)
 
-    if corners.count(None) == 1:
+    if corners.count(None) > 1:
+        return image
+    elif corners.count(None) == 1:
         # Lấy tọa độ của 3 điểm
         p1, p2, p3 = [corner for corner in corners if corner is not None]
 
@@ -53,11 +55,8 @@ def crop_image(image_path, label_path):
         # Thêm điểm thứ 4 vào danh sách
         corners[none_index] = p4
 
-    top_left = (min(corners[0][0], corners[0][2]), min(corners[0][1], corners[0][3]))
-    bottom_right = (max(corners[3][0], corners[3][2]), max(corners[3][1], corners[3][3]))
-    
     # Xoay hình ảnh
-    image = rotate_image_to_align_vectors(image, corners, top_left, bottom_right)
+    image = rotate_image_to_align_vectors(image, corners)
 
     return image
 
@@ -105,21 +104,28 @@ def custom_rotate_image(image, angle_deg):
     rotated_image = cv2.warpAffine(image, M, (new_w, new_h))
     return rotated_image
 
-def rotate_image_to_align_vectors(image, corners, cornerA, cornerD):
+def rotate_image_to_align_vectors(image, corners):
     # Tìm góc trên cùng bên trái và góc dưới cùng bên phải của hình chữ nhật
     min_x = min([corner[0] for corner in corners])
     min_y = min([corner[1] for corner in corners])
     max_x = max([corner[2] for corner in corners])
     max_y = max([corner[3] for corner in corners])
 
+    cr1, cr2, cr3, cr4 = get_corners(image)
     # Lấy hình ảnh cắt
     image = image[min_y:max_y, min_x:max_x]
 
-    corner1, c2, c3, corner4 = get_corners(image)
+    c1, c2, c3, c4 = get_corners(image)
+    
+    top_left = (min(corners[0][0], corners[0][2]) - min_x,
+                min(corners[0][1], corners[0][3]) - min_y)
+    bottom_right = (max(corners[3][0], corners[3][2]) - min_x,
+                    max(corners[3][1], corners[3][3]) - min_y)
+ 
 
     # Tính toán vector 14 và vector ad
-    vector_14 = np.array([corner4[0] - corner1[0], corner4[1] - corner1[1]])
-    vector_ad = np.array([cornerD[0] - cornerA[0], cornerD[1] - cornerA[1]])
+    vector_14 = np.array([c4[0] - c1[0], c4[1] - c1[1]])
+    vector_ad = np.array([bottom_right[0] - top_left[0], bottom_right[1] - top_left[1]])
 
     # Tính toán góc xoay giữa vector 14 và vector ad
     angle_rad = math.atan2(vector_ad[1],
@@ -127,11 +133,28 @@ def rotate_image_to_align_vectors(image, corners, cornerA, cornerD):
                                                       vector_14[0])
     angle_deg = math.degrees(angle_rad)
 
+    # Nếu top left của đối tượng tới hình lớn hơn
+    # top left của đối tượng tới 3 góc còn lại
     # Cộng thêm nửa góc vuông: Độ lệch từ góc chéo tới cạnh hình cn
-    # angle_deg += 45
+    top_left = (min(corners[0][0], corners[0][2]),
+                min(corners[0][1], corners[0][3]))
+    top_right = (max(corners[1][0], corners[1][2]),
+                 min(corners[1][1], corners[1][3]))
+    bottom_left = (min(corners[2][0], corners[2][2]),
+                   max(corners[2][1], corners[2][3]))
+    bottom_right = (max(corners[3][0], corners[3][2]),
+                    max(corners[3][1], corners[3][3]))
+    if distance(cr1, top_left) > min(distance(cr1, top_right),
+                                    distance(cr1, bottom_left),
+                                    distance(cr1, bottom_right)):
+        angle_deg += 22.5
     
     image = custom_rotate_image(image, angle_deg)
 
     return image
 
+def distance(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
